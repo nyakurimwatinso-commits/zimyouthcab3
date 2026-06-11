@@ -65,8 +65,10 @@ function AdminPage() {
       const path = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
       const { error: upErr } = await supabase.storage.from("news-images").upload(path, file, { contentType: file.type });
       if (upErr) { setSubmitting(false); toast.error("Image upload failed: " + upErr.message); return; }
-      const { data: pub } = supabase.storage.from("news-images").getPublicUrl(path);
-      image_url = pub.publicUrl;
+      // Bucket is private; create a long-lived signed URL (10 years).
+      const { data: signed, error: sErr } = await supabase.storage.from("news-images").createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+      if (sErr || !signed) { setSubmitting(false); toast.error("Couldn't link image."); return; }
+      image_url = signed.signedUrl;
     }
     const { data: ud } = await supabase.auth.getUser();
     const { error } = await supabase.from("news_posts").insert({ title: title.trim(), content: content.trim(), image_url, author_id: ud.user!.id });
