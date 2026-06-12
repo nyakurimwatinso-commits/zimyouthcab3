@@ -29,6 +29,7 @@ function AdminPage() {
   const [metrics, setMetrics] = useState({ users: 0, votes: 0, aspirations: 0, talents: 0 });
   const [links, setLinks] = useState<Record<string, string>>({});
   const [savingLink, setSavingLink] = useState<string | null>(null);
+  const [selectedProvince, setSelectedProvince] = useState<string>(PROVINCES[0].value);
 
   useEffect(() => {
     (async () => {
@@ -201,30 +202,54 @@ function AdminPage() {
             <span className="chip">⚙️ Settings</span>
             <h2 className="mt-2 font-display text-lg font-bold">Provincial WhatsApp links</h2>
             <p className="text-xs text-muted-foreground">
-              Paste the invite URL for each province. New sign-ups from that area are redirected here automatically. Leave blank to send them to the Youth Hub instead.
+              Pick a province, paste its invite URL, hit Save. New sign-ups from that area are redirected there automatically. Leave blank to send them to the Youth Hub instead.
             </p>
             <div className="mt-4 space-y-3">
-              {PROVINCES.map((p) => (
-                <div key={p.value} className="space-y-1.5">
-                  <Label className="text-xs font-semibold">{p.label}</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={links[p.value] ?? ""}
-                      onChange={(e) => setLinks((prev) => ({ ...prev, [p.value]: e.target.value }))}
-                      placeholder="https://chat.whatsapp.com/…"
-                      className="h-11 flex-1"
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => saveLink(p.value)}
-                      disabled={savingLink === p.value}
-                      className="tap-press h-11 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground"
-                    >
-                      {savingLink === p.value ? "…" : "Save"}
-                    </Button>
-                  </div>
-                </div>
-              ))}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Province</Label>
+                <select
+                  value={selectedProvince}
+                  onChange={(e) => setSelectedProvince(e.target.value)}
+                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {PROVINCES.map((p) => {
+                    const has = (links[p.value] ?? "").trim().startsWith("http");
+                    return (
+                      <option key={p.value} value={p.value}>
+                        {has ? "✅ " : "⚪️ "}{p.label}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">WhatsApp invite URL</Label>
+                <Input
+                  value={links[selectedProvince] ?? ""}
+                  onChange={(e) => setLinks((prev) => ({ ...prev, [selectedProvince]: e.target.value }))}
+                  placeholder="https://chat.whatsapp.com/…"
+                  className="h-11"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={() => saveLink(selectedProvince)}
+                disabled={savingLink === selectedProvince}
+                size="lg"
+                className="tap-press !mt-4 h-12 w-full rounded-full bg-gold font-bold text-gold-foreground shadow-glow hover:bg-gold/90"
+              >
+                {savingLink === selectedProvince ? "Saving…" : "Save link"}
+              </Button>
+              {(links[selectedProvince] ?? "").trim() && (
+                <a
+                  href={links[selectedProvince]}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block text-center text-xs font-semibold text-primary hover:underline"
+                >
+                  Test link ↗
+                </a>
+              )}
             </div>
           </div>
         </div>
