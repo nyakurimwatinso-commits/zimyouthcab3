@@ -29,6 +29,7 @@ function AdminPage() {
   const [metrics, setMetrics] = useState({ users: 0, votes: 0, aspirations: 0, talents: 0 });
   const [links, setLinks] = useState<Record<string, string>>({});
   const [savingLink, setSavingLink] = useState<string | null>(null);
+  const [selectedProvince, setSelectedProvince] = useState<string>(PROVINCES[0].value);
 
   useEffect(() => {
     (async () => {
