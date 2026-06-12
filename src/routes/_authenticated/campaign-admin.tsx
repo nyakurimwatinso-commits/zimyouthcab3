@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { NavBar } from "@/components/cab3/NavBar";
 import { Footer } from "@/components/cab3/Footer";
 import { toast } from "sonner";
+import { PROVINCES } from "@/lib/cab3-data";
 
 export const Route = createFileRoute("/_authenticated/campaign-admin")({
   head: () => ({ meta: [{ title: "Admin · CAB3" }, { name: "robots", content: "noindex" }] }),
@@ -26,6 +27,8 @@ function AdminPage() {
   const [submitting, setSubmitting] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [metrics, setMetrics] = useState({ users: 0, votes: 0, aspirations: 0, talents: 0 });
+  const [links, setLinks] = useState<Record<string, string>>({});
+  const [savingLink, setSavingLink] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -38,8 +41,27 @@ function AdminPage() {
       setChecking(false);
       loadPosts();
       loadMetrics();
+      loadLinks();
     })();
   }, [navigate]);
+
+  async function loadLinks() {
+    const { data } = await supabase.from("province_links").select("province,whatsapp_url");
+    const map: Record<string, string> = {};
+    for (const p of PROVINCES) map[p.value] = "";
+    for (const row of data ?? []) map[row.province] = row.whatsapp_url ?? "";
+    setLinks(map);
+  }
+
+  async function saveLink(province: string) {
+    const url = (links[province] ?? "").trim();
+    if (url && !/^https?:\/\//i.test(url)) { toast.error("Link must start with http(s)://"); return; }
+    setSavingLink(province);
+    const { error } = await supabase.from("province_links").upsert({ province, whatsapp_url: url, updated_at: new Date().toISOString() }, { onConflict: "province" });
+    setSavingLink(null);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Link saved");
+  }
 
   async function loadPosts() {
     const { data } = await supabase.from("news_posts").select("id,title,content,image_url,created_at").order("created_at", { ascending: false }).limit(50);
@@ -172,6 +194,37 @@ function AdminPage() {
                 </div>
               ))}
               {posts.length === 0 && <p className="text-sm text-muted-foreground">No posts yet — publish your first one above.</p>}
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-card">
+            <span className="chip">⚙️ Settings</span>
+            <h2 className="mt-2 font-display text-lg font-bold">Provincial WhatsApp links</h2>
+            <p className="text-xs text-muted-foreground">
+              Paste the invite URL for each province. New sign-ups from that area are redirected here automatically. Leave blank to send them to the Youth Hub instead.
+            </p>
+            <div className="mt-4 space-y-3">
+              {PROVINCES.map((p) => (
+                <div key={p.value} className="space-y-1.5">
+                  <Label className="text-xs font-semibold">{p.label}</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={links[p.value] ?? ""}
+                      onChange={(e) => setLinks((prev) => ({ ...prev, [p.value]: e.target.value }))}
+                      placeholder="https://chat.whatsapp.com/…"
+                      className="h-11 flex-1"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => saveLink(p.value)}
+                      disabled={savingLink === p.value}
+                      className="tap-press h-11 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground"
+                    >
+                      {savingLink === p.value ? "…" : "Save"}
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

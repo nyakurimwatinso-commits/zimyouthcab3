@@ -116,6 +116,24 @@ export type Database = {
         }
         Relationships: []
       }
+      province_links: {
+        Row: {
+          province: string
+          updated_at: string
+          whatsapp_url: string
+        }
+        Insert: {
+          province: string
+          updated_at?: string
+          whatsapp_url?: string
+        }
+        Update: {
+          province?: string
+          updated_at?: string
+          whatsapp_url?: string
+        }
+        Relationships: []
+      }
       talents: {
         Row: {
           content: string
