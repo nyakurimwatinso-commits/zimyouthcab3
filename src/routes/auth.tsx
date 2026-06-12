@@ -2,7 +2,13 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { PROVINCES, whatsappLinkFor } from "@/lib/cab3-data";
+import { PROVINCES } from "@/lib/cab3-data";
+
+async function whatsappLinkFor(province: string): Promise<string> {
+  const { data } = await supabase.from("province_links").select("whatsapp_url").eq("province", province).maybeSingle();
+  const url = data?.whatsapp_url?.trim();
+  return url && url.startsWith("http") ? url : "/youth-hub";
+}
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
