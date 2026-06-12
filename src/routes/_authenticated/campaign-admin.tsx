@@ -27,6 +27,8 @@ function AdminPage() {
   const [submitting, setSubmitting] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [metrics, setMetrics] = useState({ users: 0, votes: 0, aspirations: 0, talents: 0 });
+  const [links, setLinks] = useState<Record<string, string>>({});
+  const [savingLink, setSavingLink] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -39,8 +41,27 @@ function AdminPage() {
       setChecking(false);
       loadPosts();
       loadMetrics();
+      loadLinks();
     })();
   }, [navigate]);
+
+  async function loadLinks() {
+    const { data } = await supabase.from("province_links").select("province,whatsapp_url");
+    const map: Record<string, string> = {};
+    for (const p of PROVINCES) map[p.value] = "";
+    for (const row of data ?? []) map[row.province] = row.whatsapp_url ?? "";
+    setLinks(map);
+  }
+
+  async function saveLink(province: string) {
+    const url = (links[province] ?? "").trim();
+    if (url && !/^https?:\/\//i.test(url)) { toast.error("Link must start with http(s)://"); return; }
+    setSavingLink(province);
+    const { error } = await supabase.from("province_links").upsert({ province, whatsapp_url: url, updated_at: new Date().toISOString() }, { onConflict: "province" });
+    setSavingLink(null);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Link saved");
+  }
 
   async function loadPosts() {
     const { data } = await supabase.from("news_posts").select("id,title,content,image_url,created_at").order("created_at", { ascending: false }).limit(50);
