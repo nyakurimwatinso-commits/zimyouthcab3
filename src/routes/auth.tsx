@@ -89,7 +89,7 @@ function AuthPage() {
       return;
     }
     toast.success("Welcome to the movement! 🇿🇼");
-    const link = whatsappLinkFor(province);
+    const link = await whatsappLinkFor(province);
     setTimeout(() => { window.location.href = link; }, 900);
   }
 
