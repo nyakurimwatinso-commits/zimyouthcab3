@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { NavBar } from "@/components/cab3/NavBar";
 import { Footer } from "@/components/cab3/Footer";
 import { toast } from "sonner";
+import { PROVINCES } from "@/lib/cab3-data";
 
 export const Route = createFileRoute("/_authenticated/campaign-admin")({
   head: () => ({ meta: [{ title: "Admin · CAB3" }, { name: "robots", content: "noindex" }] }),
