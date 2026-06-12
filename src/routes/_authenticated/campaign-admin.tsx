@@ -196,6 +196,37 @@ function AdminPage() {
               {posts.length === 0 && <p className="text-sm text-muted-foreground">No posts yet — publish your first one above.</p>}
             </div>
           </div>
+
+          <div className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-card">
+            <span className="chip">⚙️ Settings</span>
+            <h2 className="mt-2 font-display text-lg font-bold">Provincial WhatsApp links</h2>
+            <p className="text-xs text-muted-foreground">
+              Paste the invite URL for each province. New sign-ups from that area are redirected here automatically. Leave blank to send them to the Youth Hub instead.
+            </p>
+            <div className="mt-4 space-y-3">
+              {PROVINCES.map((p) => (
+                <div key={p.value} className="space-y-1.5">
+                  <Label className="text-xs font-semibold">{p.label}</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={links[p.value] ?? ""}
+                      onChange={(e) => setLinks((prev) => ({ ...prev, [p.value]: e.target.value }))}
+                      placeholder="https://chat.whatsapp.com/…"
+                      className="h-11 flex-1"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => saveLink(p.value)}
+                      disabled={savingLink === p.value}
+                      className="tap-press h-11 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground"
+                    >
+                      {savingLink === p.value ? "…" : "Save"}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </main>
       <Footer />
