@@ -16,6 +16,7 @@ export const Route = createFileRoute("/_authenticated/campaign-admin")({
 });
 
 type Post = { id: string; title: string; content: string; image_url: string | null; created_at: string };
+type Member = { id: string; username: string; full_name: string; isAdmin: boolean };
 
 function AdminPage() {
   const navigate = useNavigate();
@@ -30,12 +31,17 @@ function AdminPage() {
   const [links, setLinks] = useState<Record<string, string>>({});
   const [savingLink, setSavingLink] = useState<string | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<string>(PROVINCES[0].value);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [changingAdmin, setChangingAdmin] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       const { data: ud } = await supabase.auth.getUser();
       const uid = ud.user?.id;
       if (!uid) { navigate({ to: "/auth" }); return; }
+      setCurrentUserId(uid);
       const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
       if (!role) { setChecking(false); setIsAdmin(false); return; }
       setIsAdmin(true);
@@ -43,6 +49,7 @@ function AdminPage() {
       loadPosts();
       loadMetrics();
       loadLinks();
+      loadMembers();
     })();
   }, [navigate]);
 
@@ -62,6 +69,27 @@ function AdminPage() {
     setSavingLink(null);
     if (error) { toast.error(error.message); return; }
     toast.success("Link saved");
+  }
+
+  async function loadMembers() {
+    const [{ data: profiles }, { data: roles }] = await Promise.all([
+      supabase.from("profiles").select("id,username,full_name").order("username"),
+      supabase.from("user_roles").select("user_id").eq("role", "admin"),
+    ]);
+    const adminIds = new Set((roles ?? []).map((role) => role.user_id));
+    setMembers((profiles ?? []).map((profile) => ({ ...profile, isAdmin: adminIds.has(profile.id) })));
+  }
+
+  async function setAdmin(member: Member, makeAdmin: boolean) {
+    if (member.id === currentUserId) return;
+    setChangingAdmin(member.id);
+    const { error } = makeAdmin
+      ? await supabase.from("user_roles").insert({ user_id: member.id, role: "admin" })
+      : await supabase.from("user_roles").delete().eq("user_id", member.id).eq("role", "admin");
+    setChangingAdmin(null);
+    if (error) { toast.error(error.message); return; }
+    toast.success(makeAdmin ? `${member.username} is now an admin.` : `Admin access removed from ${member.username}.`);
+    loadMembers();
   }
 
   async function loadPosts() {
@@ -94,7 +122,9 @@ function AdminPage() {
       image_url = signed.signedUrl;
     }
     const { data: ud } = await supabase.auth.getUser();
-    const { error } = await supabase.from("news_posts").insert({ title: title.trim(), content: content.trim(), image_url, author_id: ud.user!.id });
+    const authorId = ud.user?.id;
+    if (!authorId) { setSubmitting(false); toast.error("Your session has expired. Please sign in again."); return; }
+    const { error } = await supabase.from("news_posts").insert({ title: title.trim(), content: content.trim(), image_url, author_id: authorId });
     setSubmitting(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Posted! 🎉 Live on the homepage.");
@@ -250,6 +280,45 @@ function AdminPage() {
                   Test link ↗
                 </a>
               )}
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-card">
+            <span className="chip">🔐 Access</span>
+            <h2 className="mt-2 font-display text-lg font-bold">Manage admins</h2>
+            <p className="text-xs text-muted-foreground">Search registered members, then grant or remove campaign-admin access.</p>
+            <Input
+              value={memberSearch}
+              onChange={(event) => setMemberSearch(event.target.value)}
+              placeholder="Search by username or name…"
+              className="mt-4 h-11"
+            />
+            <div className="mt-3 space-y-2">
+              {members
+                .filter((member) => `${member.username} ${member.full_name}`.toLowerCase().includes(memberSearch.trim().toLowerCase()))
+                .map((member) => (
+                  <div key={member.id} className="flex items-center gap-3 rounded-2xl border border-border bg-background p-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-foreground">{member.username}</p>
+                      <p className="truncate text-xs text-muted-foreground">{member.full_name}{member.isAdmin ? " · Admin" : " · Member"}</p>
+                    </div>
+                    {member.id === currentUserId ? (
+                      <span className="chip">You</span>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={member.isAdmin ? "outline" : "default"}
+                        disabled={changingAdmin === member.id}
+                        onClick={() => setAdmin(member, !member.isAdmin)}
+                        className="tap-press shrink-0 rounded-full"
+                      >
+                        {changingAdmin === member.id ? "Saving…" : member.isAdmin ? "Remove admin" : "Make admin"}
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              {members.length === 0 && <p className="py-3 text-sm text-muted-foreground">No registered members found.</p>}
             </div>
           </div>
         </div>
