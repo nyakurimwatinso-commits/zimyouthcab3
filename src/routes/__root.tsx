@@ -78,15 +78,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
+      { title: "CAB3 Pambili — Zimbabwe Youth Movement" },
       { name: "description", content: "Youth Nation Connect mobilizes Zimbabwean youth for the Constitution of Zimbabwe Amendment No. 3 Bill (CAB3)." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
+      { name: "author", content: "CAB3 Pambili" },
+      { property: "og:title", content: "CAB3 Pambili — Zimbabwe Youth Movement" },
       { property: "og:description", content: "Youth Nation Connect mobilizes Zimbabwean youth for the Constitution of Zimbabwe Amendment No. 3 Bill (CAB3)." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
+      { name: "twitter:title", content: "CAB3 Pambili — Zimbabwe Youth Movement" },
       { name: "twitter:description", content: "Youth Nation Connect mobilizes Zimbabwean youth for the Constitution of Zimbabwe Amendment No. 3 Bill (CAB3)." },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/d7QTsxBhM2M2wN5EcJqoh0sbBCn2/social-images/social-1781164474590-1000612697.webp" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/d7QTsxBhM2M2wN5EcJqoh0sbBCn2/social-images/social-1781164474590-1000612697.webp" },
@@ -120,6 +119,24 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const hasBackendConfig = Boolean(
+    import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  );
+
+  if (!hasBackendConfig) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-5">
+        <section className="w-full max-w-md rounded-2xl border border-border bg-card p-7 text-center shadow-card">
+          <h1 className="font-display text-2xl font-black text-foreground">Setup is almost complete</h1>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            This deployment is missing its public backend connection settings. Add
+            VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in the hosting environment, then
+            redeploy.
+          </p>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

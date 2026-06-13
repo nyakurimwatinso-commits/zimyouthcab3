@@ -3,18 +3,22 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { PROVINCES } from "@/lib/cab3-data";
-
-async function whatsappLinkFor(province: string): Promise<string> {
-  const { data } = await supabase.from("province_links").select("whatsapp_url").eq("province", province).maybeSingle();
-  const url = data?.whatsapp_url?.trim();
-  return url && url.startsWith("http") ? url : "/youth-hub";
-}
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { NavBar } from "@/components/cab3/NavBar";
 import { Footer } from "@/components/cab3/Footer";
+
+async function fetchProvinceWhatsappLink(province: string): Promise<string> {
+  const { data } = await supabase
+    .from("province_links")
+    .select("whatsapp_url")
+    .eq("province", province)
+    .maybeSingle();
+  const url = data?.whatsapp_url?.trim();
+  return url && url.startsWith("http") ? url : "/youth-hub";
+}
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -73,7 +77,7 @@ function AuthPage() {
     const { data, error } = await supabase.auth.signUp({
       email: toEmail(username),
       password,
-      options: { emailRedirectTo: `${window.location.origin}/youth-hub` },
+      options: { emailRedirectTo: new URL("/youth-hub", window.location.href).toString() },
     });
     if (error || !data.user) {
       setLoading(false);
@@ -89,7 +93,7 @@ function AuthPage() {
       return;
     }
     toast.success("Welcome to the movement! 🇿🇼");
-    const link = await whatsappLinkFor(province);
+    const link = await fetchProvinceWhatsappLink(province);
     setTimeout(() => { window.location.href = link; }, 900);
   }
 
