@@ -122,7 +122,9 @@ function AdminPage() {
       image_url = signed.signedUrl;
     }
     const { data: ud } = await supabase.auth.getUser();
-    const { error } = await supabase.from("news_posts").insert({ title: title.trim(), content: content.trim(), image_url, author_id: ud.user!.id });
+    const authorId = ud.user?.id;
+    if (!authorId) { setSubmitting(false); toast.error("Your session has expired. Please sign in again."); return; }
+    const { error } = await supabase.from("news_posts").insert({ title: title.trim(), content: content.trim(), image_url, author_id: authorId });
     setSubmitting(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Posted! 🎉 Live on the homepage.");
