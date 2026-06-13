@@ -120,6 +120,24 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const hasBackendConfig = Boolean(
+    import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  );
+
+  if (!hasBackendConfig) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-5">
+        <section className="w-full max-w-md rounded-2xl border border-border bg-card p-7 text-center shadow-card">
+          <h1 className="font-display text-2xl font-black text-foreground">Setup is almost complete</h1>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            This deployment is missing its public backend connection settings. Add
+            VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in the hosting environment, then
+            redeploy.
+          </p>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

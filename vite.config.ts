@@ -12,4 +12,7 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Emit Vercel Build Output API files when building outside Lovable.
+  // TanStack Start owns routing, so no SPA index.html rewrite is needed.
+  nitro: { preset: "vercel" },
 });
