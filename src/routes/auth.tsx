@@ -46,7 +46,7 @@ function toEmail(username: string) {
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signup" | "signin">("signup");
+  const [mode, setMode] = useState<"signup" | "signin" | "admin">("signup");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -103,13 +103,27 @@ function AuthPage() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: toEmail(parsed.data.username),
       password: parsed.data.password,
     });
     setLoading(false);
     if (error) {
       toast.error("Invalid username or password.");
+      return;
+    }
+    if (mode === "admin") {
+      const userId = data.user?.id;
+      const { data: role } = userId
+        ? await supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle()
+        : { data: null };
+      if (!role) {
+        await supabase.auth.signOut();
+        toast.error("This account does not have admin access.");
+        return;
+      }
+      toast.success("Admin access confirmed.");
+      navigate({ to: "/campaign-admin" });
       return;
     }
     toast.success("Welcome back!");
@@ -121,29 +135,41 @@ function AuthPage() {
       <NavBar />
       <main className="px-5 py-8">
         <div className="mx-auto max-w-md">
-          <span className="chip">{mode === "signup" ? "✨ Step in" : "👋 Welcome back"}</span>
+          <span className="chip">{mode === "signup" ? "✨ Step in" : mode === "admin" ? "🔐 Admin access" : "👋 Welcome back"}</span>
           <h1 className="mt-3 font-display text-3xl font-black tracking-tight text-foreground">
-            {mode === "signup" ? "Join thousands of youths driving the vision." : "Sign in to your Youth Hub."}
+            {mode === "signup" ? "Join thousands of youths driving the vision." : mode === "admin" ? "Sign in to Campaign Admin." : "Sign in to your Youth Hub."}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {mode === "signup"
               ? "Pick a username + password. We'll match you to your provincial WhatsApp group instantly."
-              : "Pick up where you left off."}
+              : mode === "admin" ? "Use an account that has been granted admin access." : "Pick up where you left off."}
           </p>
 
-          <div className="mt-6 flex rounded-full border border-border bg-secondary p-1 text-sm font-semibold">
-            <button
+          <div className="mt-6 grid grid-cols-3 rounded-full border border-border bg-secondary p-1 text-sm font-semibold">
+            <Button
+              type="button"
+              variant="ghost"
               onClick={() => setMode("signup")}
-              className={`tap-press flex-1 rounded-full px-3 py-2 ${mode === "signup" ? "bg-primary text-primary-foreground shadow-card" : "text-muted-foreground"}`}
+              className={`tap-press rounded-full px-2 ${mode === "signup" ? "bg-primary text-primary-foreground shadow-card hover:bg-primary/90" : "text-muted-foreground"}`}
             >
               Sign Up
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
               onClick={() => setMode("signin")}
-              className={`tap-press flex-1 rounded-full px-3 py-2 ${mode === "signin" ? "bg-primary text-primary-foreground shadow-card" : "text-muted-foreground"}`}
+              className={`tap-press rounded-full px-2 ${mode === "signin" ? "bg-primary text-primary-foreground shadow-card hover:bg-primary/90" : "text-muted-foreground"}`}
             >
               Sign In
-            </button>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setMode("admin")}
+              className={`tap-press rounded-full px-2 ${mode === "admin" ? "bg-primary text-primary-foreground shadow-card hover:bg-primary/90" : "text-muted-foreground"}`}
+            >
+              Admin
+            </Button>
           </div>
 
           {mode === "signup" ? (
@@ -196,7 +222,7 @@ function AuthPage() {
                 size="lg"
                 className="tap-press !mt-5 h-12 w-full rounded-full bg-primary font-bold text-primary-foreground hover:bg-primary/90"
               >
-                {loading ? "Signing in…" : "Sign in →"}
+                {loading ? "Signing in…" : mode === "admin" ? "Log in as admin →" : "Sign in →"}
               </Button>
             </form>
           )}
