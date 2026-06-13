@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NavBar } from "@/components/cab3/NavBar";
 import { Footer } from "@/components/cab3/Footer";
 import { toast } from "sonner";
-import { whatsappLinkFor, PROVINCES } from "@/lib/cab3-data";
+import { PROVINCES } from "@/lib/cab3-data";
 
 export const Route = createFileRoute("/_authenticated/youth-hub")({
   head: () => ({ meta: [{ title: "Youth Hub — CAB3 Pambili" }, { name: "robots", content: "noindex" }] }),
@@ -26,6 +26,7 @@ function YouthHub() {
   const [savingA, setSavingA] = useState(false);
   const [savingT, setSavingT] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -39,6 +40,15 @@ function YouthHub() {
         supabase.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle(),
       ]);
       setProfile(p);
+      if (p?.province) {
+        const { data: provinceLink } = await supabase
+          .from("province_links")
+          .select("whatsapp_url")
+          .eq("province", p.province)
+          .maybeSingle();
+        const url = provinceLink?.whatsapp_url?.trim();
+        setWhatsappUrl(url && /^https?:\/\//i.test(url) ? url : null);
+      }
       if (a) { setAspirations(a.content); setAspirationsId(a.id); }
       if (t) { setTalents(t.content); setTalentsId(t.id); }
       setIsAdmin(!!r);
@@ -48,7 +58,8 @@ function YouthHub() {
   async function saveAspirations() {
     setSavingA(true);
     const { data: ud } = await supabase.auth.getUser();
-    const uid = ud.user!.id;
+    const uid = ud.user?.id;
+    if (!uid) { setSavingA(false); toast.error("Your session has expired. Please sign in again."); return; }
     if (aspirationsId) {
       const { error } = await supabase.from("aspirations").update({ content: aspirations, updated_at: new Date().toISOString() }).eq("id", aspirationsId);
       setSavingA(false);
@@ -65,7 +76,8 @@ function YouthHub() {
   async function saveTalents() {
     setSavingT(true);
     const { data: ud } = await supabase.auth.getUser();
-    const uid = ud.user!.id;
+    const uid = ud.user?.id;
+    if (!uid) { setSavingT(false); toast.error("Your session has expired. Please sign in again."); return; }
     if (talentsId) {
       const { error } = await supabase.from("talents").update({ content: talents, updated_at: new Date().toISOString() }).eq("id", talentsId);
       setSavingT(false);
@@ -100,9 +112,9 @@ function YouthHub() {
               Your Youth Hub · {provinceLabel}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {profile?.province && (
+              {whatsappUrl && (
                 <a
-                  href={whatsappLinkFor(profile.province)}
+                  href={whatsappUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="tap-press inline-flex h-10 items-center rounded-full bg-gold px-4 text-sm font-bold text-gold-foreground shadow-glow"

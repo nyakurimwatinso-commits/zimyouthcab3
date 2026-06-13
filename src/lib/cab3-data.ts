@@ -1,21 +1,17 @@
 export const PROVINCES = [
-  { value: "harare", label: "Harare", whatsapp: "https://chat.whatsapp.com/PLACEHOLDER_HARARE" },
-  { value: "bulawayo", label: "Bulawayo", whatsapp: "https://chat.whatsapp.com/PLACEHOLDER_BULAWAYO" },
-  { value: "manicaland", label: "Manicaland - Mutare", whatsapp: "https://chat.whatsapp.com/PLACEHOLDER_MANICALAND" },
-  { value: "mash_central", label: "Mashonaland Central - Bindura", whatsapp: "https://chat.whatsapp.com/PLACEHOLDER_MASH_CENTRAL" },
-  { value: "mash_east", label: "Mashonaland East - Marondera", whatsapp: "https://chat.whatsapp.com/PLACEHOLDER_MASH_EAST" },
-  { value: "mash_west", label: "Mashonaland West - Chinhoyi", whatsapp: "https://chat.whatsapp.com/PLACEHOLDER_MASH_WEST" },
-  { value: "mat_north", label: "Matabeleland North - Lupane", whatsapp: "https://chat.whatsapp.com/PLACEHOLDER_MAT_NORTH" },
-  { value: "mat_south", label: "Matabeleland South - Gwanda", whatsapp: "https://chat.whatsapp.com/PLACEHOLDER_MAT_SOUTH" },
-  { value: "midlands", label: "Midlands - Gweru", whatsapp: "https://chat.whatsapp.com/PLACEHOLDER_MIDLANDS" },
-  { value: "masvingo", label: "Masvingo", whatsapp: "https://chat.whatsapp.com/PLACEHOLDER_MASVINGO" },
+  { value: "harare", label: "Harare" },
+  { value: "bulawayo", label: "Bulawayo" },
+  { value: "manicaland", label: "Manicaland - Mutare" },
+  { value: "mash_central", label: "Mashonaland Central - Bindura" },
+  { value: "mash_east", label: "Mashonaland East - Marondera" },
+  { value: "mash_west", label: "Mashonaland West - Chinhoyi" },
+  { value: "mat_north", label: "Matabeleland North - Lupane" },
+  { value: "mat_south", label: "Matabeleland South - Gwanda" },
+  { value: "midlands", label: "Midlands - Gweru" },
+  { value: "masvingo", label: "Masvingo" },
 ] as const;
 
 export type ProvinceValue = (typeof PROVINCES)[number]["value"];
-
-export function whatsappLinkFor(value: string): string {
-  return PROVINCES.find((p) => p.value === value)?.whatsapp ?? "https://chat.whatsapp.com/PLACEHOLDER_NATIONAL";
-}
 
 export const POLL_OPTIONS = [
   { value: "tech", label: "Tech & Innovation Grants", emoji: "💻" },
