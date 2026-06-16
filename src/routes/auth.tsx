@@ -21,6 +21,7 @@ async function fetchProvinceWhatsappLink(province: string): Promise<string> {
 }
 
 export const Route = createFileRoute("/auth")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Join the Movement — CAB3 Pambili" },
