@@ -21,6 +21,7 @@ async function fetchProvinceWhatsappLink(province: string): Promise<string> {
 }
 
 export const Route = createFileRoute("/auth")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Join the Movement — CAB3 Pambili" },
@@ -111,16 +112,21 @@ function AuthPage() {
       email: toEmail(parsed.data.username),
       password: parsed.data.password,
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error("Invalid username or password.");
       return;
     }
     if (mode === "admin") {
       const userId = data.user?.id;
-      const { data: role } = userId
+      const { data: role, error: roleError } = userId
         ? await supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle()
-        : { data: null };
+        : { data: null, error: null };
+      setLoading(false);
+      if (roleError) {
+        toast.error("Admin access could not be verified. Please try again.");
+        return;
+      }
       if (!role) {
         await supabase.auth.signOut();
         toast.error("This account does not have admin access.");
@@ -130,6 +136,7 @@ function AuthPage() {
       navigate({ to: "/campaign-admin" });
       return;
     }
+    setLoading(false);
     toast.success("Welcome back!");
     navigate({ to: "/youth-hub" });
   }
