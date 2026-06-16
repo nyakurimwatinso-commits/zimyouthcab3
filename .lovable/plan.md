@@ -1,20 +1,23 @@
-## Grant admin access to CdeTinashe
+## Problem
 
-You've shared your signup details. Before I can grant the role, I need to confirm you've actually completed signup in the app (visit `/auth`, sign up with username **CdeTinashe** and password **Tinsoman5**, fill in name/phone/age/province). Once that's done, I'll run a one-line data insert.
+Signing in as **CdeTinashe / Tinsoman5** at `/auth` (Admin tab) fails with "Invalid username or password."
 
-### What I'll do (after you confirm signup is complete)
+What I confirmed in the database:
+- Profile exists: `cdetinashe@cab3.app`, user id `16c811f3-…8729be`.
+- That user has the `admin` role in `user_roles`.
+- Auth code maps username → `cdetinashe@cab3.app` correctly.
+- No failed-signin entries appear in recent auth logs, which means the credential mismatch is happening at password verification (the password on the auth.users row is no longer `Tinsoman5`).
 
-Run a single `INSERT` into `public.user_roles` that grants the `admin` role to the auth user whose profile username is `CdeTinashe`:
+So the account and admin grant are fine — only the password is out of sync.
 
-```sql
-INSERT INTO public.user_roles (user_id, role)
-SELECT id, 'admin'::app_role FROM public.profiles WHERE username = 'CdeTinashe'
-ON CONFLICT (user_id, role) DO NOTHING;
-```
+## Fix
 
-That's it — no code changes, no migration. After it runs, refresh `/campaign-admin` and you'll have full access to publish news posts and view metrics.
+1. Run a one-shot server-side reset using the service-role key (same approach used previously) to set the password back to `Tinsoman5` and ensure the email is confirmed:
+   - `supabaseAdmin.auth.admin.updateUserById('16c811f3-…8729be', { password: 'Tinsoman5', email_confirm: true })`
+2. Verify by signing in via the Admin tab on `/auth` — should redirect to `/campaign-admin`.
 
-### Security note
-Please change your password after first sign-in if you ever shared it outside this chat — treat passwords as private.
+## Follow-up (recommended, ask before doing)
 
-**Reply "signed up" (or just "go") once your account exists and I'll run the insert.**
+To stop this from recurring, add a small "Reset member password" control to the Manage Admins panel in `campaign-admin`. It would call a protected server function (`requireSupabaseAuth` + `has_role('admin')` check) that uses `supabaseAdmin.auth.admin.updateUserById` to set a new password for any member. That way you can recover accounts from the UI without me touching scripts.
+
+Want me to (a) just reset the password now, or (b) reset it **and** add the admin-side password reset control?
