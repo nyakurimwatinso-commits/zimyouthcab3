@@ -354,6 +354,44 @@ function AdminPage() {
           </div>
         </div>
       </main>
+      <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) setViewing(null); }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{viewing?.username || "Member"}</DialogTitle>
+            <DialogDescription>{viewing?.full_name}</DialogDescription>
+          </DialogHeader>
+          {viewLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : viewing && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="text-xs font-semibold uppercase text-muted-foreground">Phone</span><p>{viewing.phone || "—"}</p></div>
+                <div><span className="text-xs font-semibold uppercase text-muted-foreground">Age</span><p>{viewing.age ?? "—"}</p></div>
+                <div><span className="text-xs font-semibold uppercase text-muted-foreground">Province</span><p>{viewing.province || "—"}</p></div>
+                <div><span className="text-xs font-semibold uppercase text-muted-foreground">Joined</span><p>{viewing.created_at ? new Date(viewing.created_at).toLocaleDateString() : "—"}</p></div>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">Aspirations ({viewAspirations.length})</h3>
+                <div className="mt-2 space-y-2">
+                  {viewAspirations.map((a) => (
+                    <div key={a.id} className="rounded-lg border border-border bg-background p-2.5 text-sm">{a.content}</div>
+                  ))}
+                  {viewAspirations.length === 0 && <p className="text-xs text-muted-foreground">None submitted.</p>}
+                </div>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">Talents ({viewTalents.length})</h3>
+                <div className="mt-2 space-y-2">
+                  {viewTalents.map((t) => (
+                    <div key={t.id} className="rounded-lg border border-border bg-background p-2.5 text-sm">{t.content}</div>
+                  ))}
+                  {viewTalents.length === 0 && <p className="text-xs text-muted-foreground">None submitted.</p>}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       <Footer />
     </div>
   );
