@@ -9,6 +9,7 @@ import { NavBar } from "@/components/cab3/NavBar";
 import { Footer } from "@/components/cab3/Footer";
 import { toast } from "sonner";
 import { PROVINCES } from "@/lib/cab3-data";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/campaign-admin")({
   head: () => ({ meta: [{ title: "Admin · CAB3" }, { name: "robots", content: "noindex" }] }),
@@ -17,6 +18,8 @@ export const Route = createFileRoute("/_authenticated/campaign-admin")({
 
 type Post = { id: string; title: string; content: string; image_url: string | null; created_at: string };
 type Member = { id: string; username: string; full_name: string; isAdmin: boolean };
+type MemberProfile = { id: string; username: string; full_name: string; phone: string | null; age: number | null; province: string | null; created_at: string };
+type Entry = { id: string; content: string; created_at: string };
 
 function AdminPage() {
   const navigate = useNavigate();
@@ -35,6 +38,25 @@ function AdminPage() {
   const [memberSearch, setMemberSearch] = useState("");
   const [changingAdmin, setChangingAdmin] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<MemberProfile | null>(null);
+  const [viewAspirations, setViewAspirations] = useState<Entry[]>([]);
+  const [viewTalents, setViewTalents] = useState<Entry[]>([]);
+  const [viewLoading, setViewLoading] = useState(false);
+
+  async function openMember(memberId: string) {
+    setViewLoading(true);
+    setViewing({ id: memberId, username: "", full_name: "", phone: null, age: null, province: null, created_at: "" });
+    const [{ data: profile }, { data: asps }, { data: tals }] = await Promise.all([
+      supabase.from("profiles").select("id,username,full_name,phone,age,province,created_at").eq("id", memberId).maybeSingle(),
+      supabase.from("aspirations").select("id,content,created_at").eq("user_id", memberId).order("created_at", { ascending: false }),
+      supabase.from("talents").select("id,content,created_at").eq("user_id", memberId).order("created_at", { ascending: false }),
+    ]);
+    if (profile) setViewing(profile as MemberProfile);
+    setViewAspirations(asps ?? []);
+    setViewTalents(tals ?? []);
+    setViewLoading(false);
+  }
+
 
   useEffect(() => {
     (async () => {
@@ -302,6 +324,15 @@ function AdminPage() {
                       <p className="truncate text-sm font-bold text-foreground">{member.username}</p>
                       <p className="truncate text-xs text-muted-foreground">{member.full_name}{member.isAdmin ? " · Admin" : " · Member"}</p>
                     </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openMember(member.id)}
+                      className="tap-press shrink-0 rounded-full"
+                    >
+                      View
+                    </Button>
                     {member.id === currentUserId ? (
                       <span className="chip">You</span>
                     ) : (
@@ -323,6 +354,44 @@ function AdminPage() {
           </div>
         </div>
       </main>
+      <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) setViewing(null); }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{viewing?.username || "Member"}</DialogTitle>
+            <DialogDescription>{viewing?.full_name}</DialogDescription>
+          </DialogHeader>
+          {viewLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : viewing && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="text-xs font-semibold uppercase text-muted-foreground">Phone</span><p>{viewing.phone || "—"}</p></div>
+                <div><span className="text-xs font-semibold uppercase text-muted-foreground">Age</span><p>{viewing.age ?? "—"}</p></div>
+                <div><span className="text-xs font-semibold uppercase text-muted-foreground">Province</span><p>{viewing.province || "—"}</p></div>
+                <div><span className="text-xs font-semibold uppercase text-muted-foreground">Joined</span><p>{viewing.created_at ? new Date(viewing.created_at).toLocaleDateString() : "—"}</p></div>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">Aspirations ({viewAspirations.length})</h3>
+                <div className="mt-2 space-y-2">
+                  {viewAspirations.map((a) => (
+                    <div key={a.id} className="rounded-lg border border-border bg-background p-2.5 text-sm">{a.content}</div>
+                  ))}
+                  {viewAspirations.length === 0 && <p className="text-xs text-muted-foreground">None submitted.</p>}
+                </div>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">Talents ({viewTalents.length})</h3>
+                <div className="mt-2 space-y-2">
+                  {viewTalents.map((t) => (
+                    <div key={t.id} className="rounded-lg border border-border bg-background p-2.5 text-sm">{t.content}</div>
+                  ))}
+                  {viewTalents.length === 0 && <p className="text-xs text-muted-foreground">None submitted.</p>}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       <Footer />
     </div>
   );
