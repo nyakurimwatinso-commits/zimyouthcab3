@@ -324,6 +324,15 @@ function AdminPage() {
                       <p className="truncate text-sm font-bold text-foreground">{member.username}</p>
                       <p className="truncate text-xs text-muted-foreground">{member.full_name}{member.isAdmin ? " · Admin" : " · Member"}</p>
                     </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openMember(member.id)}
+                      className="tap-press shrink-0 rounded-full"
+                    >
+                      View
+                    </Button>
                     {member.id === currentUserId ? (
                       <span className="chip">You</span>
                     ) : (
