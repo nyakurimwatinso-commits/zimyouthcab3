@@ -9,6 +9,7 @@ import { NavBar } from "@/components/cab3/NavBar";
 import { Footer } from "@/components/cab3/Footer";
 import { toast } from "sonner";
 import { PROVINCES } from "@/lib/cab3-data";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/campaign-admin")({
   head: () => ({ meta: [{ title: "Admin · CAB3" }, { name: "robots", content: "noindex" }] }),
@@ -17,6 +18,8 @@ export const Route = createFileRoute("/_authenticated/campaign-admin")({
 
 type Post = { id: string; title: string; content: string; image_url: string | null; created_at: string };
 type Member = { id: string; username: string; full_name: string; isAdmin: boolean };
+type MemberProfile = { id: string; username: string; full_name: string; phone: string | null; age: number | null; province: string | null; created_at: string };
+type Entry = { id: string; content: string; created_at: string };
 
 function AdminPage() {
   const navigate = useNavigate();
