@@ -38,6 +38,25 @@ function AdminPage() {
   const [memberSearch, setMemberSearch] = useState("");
   const [changingAdmin, setChangingAdmin] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<MemberProfile | null>(null);
+  const [viewAspirations, setViewAspirations] = useState<Entry[]>([]);
+  const [viewTalents, setViewTalents] = useState<Entry[]>([]);
+  const [viewLoading, setViewLoading] = useState(false);
+
+  async function openMember(memberId: string) {
+    setViewLoading(true);
+    setViewing({ id: memberId, username: "", full_name: "", phone: null, age: null, province: null, created_at: "" });
+    const [{ data: profile }, { data: asps }, { data: tals }] = await Promise.all([
+      supabase.from("profiles").select("id,username,full_name,phone,age,province,created_at").eq("id", memberId).maybeSingle(),
+      supabase.from("aspirations").select("id,content,created_at").eq("user_id", memberId).order("created_at", { ascending: false }),
+      supabase.from("talents").select("id,content,created_at").eq("user_id", memberId).order("created_at", { ascending: false }),
+    ]);
+    if (profile) setViewing(profile as MemberProfile);
+    setViewAspirations(asps ?? []);
+    setViewTalents(tals ?? []);
+    setViewLoading(false);
+  }
+
 
   useEffect(() => {
     (async () => {
