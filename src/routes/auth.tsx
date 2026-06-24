@@ -142,107 +142,124 @@ function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <NavBar />
-      <main className="px-5 py-8">
-        <div className="mx-auto max-w-md">
-          <span className="chip">{mode === "signup" ? "✨ Step in" : mode === "admin" ? "🔐 Admin access" : "👋 Welcome back"}</span>
-          <h1 className="mt-3 font-display text-3xl font-black tracking-tight text-foreground">
-            {mode === "signup" ? "Join thousands of youths driving the vision." : mode === "admin" ? "Sign in to Campaign Admin." : "Sign in to your Youth Hub."}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {mode === "signup"
-              ? "Pick a username + password. We'll match you to your provincial WhatsApp group instantly."
-              : mode === "admin" ? "Use an account that has been granted admin access." : "Pick up where you left off."}
-          </p>
-
-          <div className="mt-6 grid grid-cols-3 rounded-full border border-border bg-secondary p-1 text-sm font-semibold">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setMode("signup")}
-              className={`tap-press rounded-full px-2 ${mode === "signup" ? "bg-primary text-primary-foreground shadow-card hover:bg-primary/90" : "text-muted-foreground"}`}
-            >
-              Sign Up
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setMode("signin")}
-              className={`tap-press rounded-full px-2 ${mode === "signin" ? "bg-primary text-primary-foreground shadow-card hover:bg-primary/90" : "text-muted-foreground"}`}
-            >
-              Sign In
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setMode("admin")}
-              className={`tap-press rounded-full px-2 ${mode === "admin" ? "bg-primary text-primary-foreground shadow-card hover:bg-primary/90" : "text-muted-foreground"}`}
-            >
-              Admin
-            </Button>
-          </div>
-
-          {mode === "signup" ? (
-            <form
-              key="signup"
-              className="mt-6 space-y-3 rounded-2xl border border-border bg-card p-5 shadow-card"
-              onSubmit={(e) => { e.preventDefault(); handleSignup(new FormData(e.currentTarget)); }}
-            >
-              <Field label="Username" name="username" placeholder="yourname" required />
-              <Field label="Password" name="password" type="password" placeholder="At least 6 characters" required />
-              <Field label="Full name" name="full_name" placeholder="Tendai Moyo" required />
-              <Field label="WhatsApp number" name="phone" type="tel" placeholder="+263 …" required />
-              <Field label="Age" name="age" type="number" min={13} max={120} placeholder="22" required />
-              <div className="space-y-1.5">
-                <Label htmlFor="province" className="text-xs font-semibold">Province / Town</Label>
-                <select
-                  id="province"
-                  name="province"
-                  required
-                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  defaultValue=""
-                >
-                  <option value="" disabled>Select your area…</option>
-                  {PROVINCES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-                </select>
-              </div>
-              <Button
-                type="submit"
-                disabled={loading}
-                size="lg"
-                className="tap-press !mt-5 h-12 w-full rounded-full bg-gold font-bold text-gold-foreground shadow-glow hover:bg-gold/90"
-              >
-                {loading ? "Joining…" : "Join & open WhatsApp group →"}
-              </Button>
-              <p className="pt-1 text-center text-[11px] text-muted-foreground">
-                By joining you support #CAB3 and agree to receive updates from your provincial group.
+    <div className="min-h-screen bg-background flex flex-col justify-between">
+      <div>
+        <NavBar />
+        <main className="px-5 py-10 relative">
+          {/* Subtle design ambient glows for visual depth */}
+          <div className="absolute top-[10%] left-1/2 -z-10 h-[300px] w-full max-w-md -translate-x-1/2 opacity-25 blur-[100px] bg-primary" />
+          
+          <div className="mx-auto max-w-md">
+            {/* Header section with layout state key matching */}
+            <div className="text-center sm:text-left">
+              <span className={`chip transition-all duration-300 ${mode === "admin" ? "bg-destructive/10 text-destructive border-destructive/10" : "bg-primary/10 text-primary border-primary/10"}`}>
+                {mode === "signup" ? "✨ Step in" : mode === "admin" ? "🔐 Admin access" : "👋 Welcome back"}
+              </span>
+              <h1 className="mt-3 font-display text-3xl font-black tracking-tight text-foreground sm:text-4xl leading-tight">
+                {mode === "signup" ? "Join thousands of youths driving the vision." : mode === "admin" ? "Sign in to Campaign Admin." : "Sign in to your Youth Hub."}
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                {mode === "signup"
+                  ? "Pick a username + password. We'll match you to your provincial WhatsApp group instantly."
+                  : mode === "admin" ? "Use an account that has been granted admin access securely." : "Pick up where you left off."}
               </p>
-            </form>
-          ) : (
-            <form
-              key="signin"
-              className="mt-6 space-y-3 rounded-2xl border border-border bg-card p-5 shadow-card"
-              onSubmit={(e) => { e.preventDefault(); handleSignin(new FormData(e.currentTarget)); }}
-            >
-              <Field label="Username" name="username" required />
-              <Field label="Password" name="password" type="password" required />
-              <Button
-                type="submit"
-                disabled={loading}
-                size="lg"
-                className="tap-press !mt-5 h-12 w-full rounded-full bg-primary font-bold text-primary-foreground hover:bg-primary/90"
-              >
-                {loading ? "Signing in…" : mode === "admin" ? "Log in as admin →" : "Sign in →"}
-              </Button>
-            </form>
-          )}
+            </div>
 
-          <p className="mt-5 text-center text-xs text-muted-foreground">
-            <Link to="/" className="font-semibold text-primary hover:underline">← Back to home</Link>
-          </p>
-        </div>
-      </main>
+            {/* Custom Engineered 3-Way Mode Switcher Tab Bar */}
+            <div className="mt-8 grid grid-cols-3 rounded-full border border-border/80 bg-muted/60 p-1 text-xs sm:text-sm font-bold shadow-inner">
+              <button
+                type="button"
+                onClick={() => setMode("signup")}
+                className={`h-9 rounded-full transition-all duration-200 ${mode === "signup" ? "bg-primary text-primary-foreground shadow-sm font-black" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Sign Up
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("signin")}
+                className={`h-9 rounded-full transition-all duration-200 ${mode === "signin" ? "bg-primary text-primary-foreground shadow-sm font-black" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("admin")}
+                className={`h-9 rounded-full transition-all duration-200 ${mode === "admin" ? "bg-primary text-primary-foreground shadow-sm font-black" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Admin
+              </button>
+            </div>
+
+            {/* Render Forms with Smooth Entrance Transitions */}
+            {mode === "signup" ? (
+              <form
+                key="signup"
+                className="mt-6 space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-md animate-fade-in"
+                onSubmit={(e) => { e.preventDefault(); handleSignup(new FormData(e.currentTarget)); }}
+              >
+                <Field label="Username" name="username" placeholder="yourname" required />
+                <Field label="Password" name="password" type="password" placeholder="At least 6 characters" required />
+                <Field label="Full name" name="full_name" placeholder="Tendai Moyo" required />
+                <Field label="WhatsApp number" name="phone" type="tel" placeholder="+263 …" required />
+                <Field label="Age" name="age" type="number" min={13} max={120} placeholder="22" required />
+                
+                <div className="space-y-1.5">
+                  <Label htmlFor="province" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Province / Town</Label>
+                  <select
+                    id="province"
+                    name="province"
+                    required
+                    className="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>Select your area…</option>
+                    {PROVINCES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                  </select>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  size="lg"
+                  className="tap-press !mt-6 h-12 w-full rounded-full bg-gold font-bold text-gold-foreground shadow-glow transition-all hover:bg-gold/95 active:scale-[0.98]"
+                >
+                  {loading ? "Joining…" : "Join & open WhatsApp group →"}
+                </Button>
+                
+                <p className="pt-2 text-center text-[11px] leading-relaxed text-muted-foreground/80 max-w-[280px] mx-auto">
+                  By joining you support #CAB3 and agree to receive updates from your provincial group.
+                </p>
+              </form>
+            ) : (
+              <form
+                key="signin"
+                className="mt-6 space-y-4 rounded-2xl border border-border/80 bg-card p-6 shadow-md animate-fade-in"
+                onSubmit={(e) => { e.preventDefault(); handleSignin(new FormData(e.currentTarget)); }}
+              >
+                <Field label="Username" name="username" placeholder="yourname" required />
+                <Field label="Password" name="password" type="password" placeholder="••••••••" required />
+                
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  size="lg"
+                  className={`tap-press !mt-6 h-12 w-full rounded-full font-bold text-primary-foreground shadow-sm transition-all active:scale-[0.98] ${
+                    mode === "admin" ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/95"
+                  }`}
+                >
+                  {loading ? "Signing in…" : mode === "admin" ? "Log in as admin →" : "Sign in →"}
+                </Button>
+              </form>
+            )}
+
+            <p className="mt-6 text-center text-xs">
+              <Link to="/" className="font-bold text-primary hover:underline transition-colors">
+                ← Back to home
+              </Link>
+            </p>
+          </div>
+        </main>
+      </div>
       <Footer />
     </div>
   );
@@ -251,8 +268,15 @@ function AuthPage() {
 function Field({ label, ...rest }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={rest.name} className="text-xs font-semibold">{label}</Label>
-      <Input id={rest.name} className="h-11" {...rest} />
+      <Label htmlFor={rest.name} className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </Label>
+      <Input 
+        id={rest.name} 
+        className="h-11 rounded-xl transition-all border-input focus-visible:ring-primary/20 focus-visible:border-primary font-medium" 
+        {...rest} 
+      />
     </div>
   );
 }
+
