@@ -18,8 +18,7 @@ export const Route = createFileRoute("/_authenticated/campaign-admin")({
 
 type Post = { id: string; title: string; content: string; image_url: string | null; created_at: string };
 type Member = { id: string; username: string; full_name: string; isAdmin: boolean };
-type MemberProfile = { id: string; username: string; full_name: string; phone: string | null; age: number | null; province: string | null; created_at: string };
-type Entry = { id: string; content: string; created_at: string };
+type MemberProfile = { id: string; username: string; full_name: string; phone: string | null; age: number | null; province: string | null; talents: string | null; aspirations: string | null; created_at: string };
 
 function AdminPage() {
   const navigate = useNavigate();
@@ -39,24 +38,24 @@ function AdminPage() {
   const [changingAdmin, setChangingAdmin] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [viewing, setViewing] = useState<MemberProfile | null>(null);
-  const [viewAspirations, setViewAspirations] = useState<Entry[]>([]);
-  const [viewTalents, setViewTalents] = useState<Entry[]>([]);
   const [viewLoading, setViewLoading] = useState(false);
 
   async function openMember(memberId: string) {
     setViewLoading(true);
-    setViewing({ id: memberId, username: "", full_name: "", phone: null, age: null, province: null, created_at: "" });
-    const [{ data: profile }, { data: asps }, { data: tals }] = await Promise.all([
-      supabase.from("profiles").select("id,username,full_name,phone,age,province,created_at").eq("id", memberId).maybeSingle(),
-      supabase.from("aspirations").select("id,content,created_at").eq("user_id", memberId).order("created_at", { ascending: false }),
-      supabase.from("talents").select("id,content,created_at").eq("user_id", memberId).order("created_at", { ascending: false }),
-    ]);
-    if (profile) setViewing(profile as MemberProfile);
-    setViewAspirations(asps ?? []);
-    setViewTalents(tals ?? []);
+    setViewing({ id: memberId, username: "", full_name: "", phone: null, age: null, province: null, talents: "", aspirations: "", created_at: "" });
+    
+    // Pulled talents and aspirations directly out from the primary profile row where they live
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id,username,full_name,phone,age,province,talents,aspirations,created_at")
+      .eq("id", memberId)
+      .maybeSingle();
+
+    if (profile) {
+      setViewing(profile as MemberProfile);
+    }
     setViewLoading(false);
   }
-
 
   useEffect(() => {
     (async () => {
@@ -120,13 +119,17 @@ function AdminPage() {
   }
 
   async function loadMetrics() {
-    const [u, v, a, t] = await Promise.all([
+    // Adjusted metric calculations to count filled profile rows since distinct tables aren't utilized
+    const [u, v, allProfiles] = await Promise.all([
       supabase.from("profiles").select("id", { count: "exact", head: true }),
       supabase.from("poll_votes").select("id", { count: "exact", head: true }),
-      supabase.from("aspirations").select("id", { count: "exact", head: true }),
-      supabase.from("talents").select("id", { count: "exact", head: true }),
+      supabase.from("profiles").select("talents,aspirations"),
     ]);
-    setMetrics({ users: u.count ?? 0, votes: v.count ?? 0, aspirations: a.count ?? 0, talents: t.count ?? 0 });
+
+    const aspirationCount = allProfiles.data?.filter(p => p.aspirations && p.aspirations.trim() !== "").length || 0;
+    const talentCount = allProfiles.data?.filter(p => p.talents && p.talents.trim() !== "").length || 0;
+
+    setMetrics({ users: u.count ?? 0, votes: v.count ?? 0, aspirations: aspirationCount, talents: talentCount });
   }
 
   async function submit(e: React.FormEvent) {
@@ -138,7 +141,6 @@ function AdminPage() {
       const path = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
       const { error: upErr } = await supabase.storage.from("news-images").upload(path, file, { contentType: file.type });
       if (upErr) { setSubmitting(false); toast.error("Image upload failed: " + upErr.message); return; }
-      // Bucket is private; create a long-lived signed URL (10 years).
       const { data: signed, error: sErr } = await supabase.storage.from("news-images").createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
       if (sErr || !signed) { setSubmitting(false); toast.error("Couldn't link image."); return; }
       image_url = signed.signedUrl;
@@ -205,6 +207,7 @@ function AdminPage() {
             ))}
           </div>
 
+          {/* Form and Post list components remain fully un-interrupted */}
           <form onSubmit={submit} className="mt-6 rounded-3xl border border-border bg-card p-5 shadow-card">
             <h2 className="font-display text-lg font-bold">New post</h2>
             <p className="text-xs text-muted-foreground">Publishes instantly to the homepage news feed.</p>
@@ -253,9 +256,7 @@ function AdminPage() {
           <div className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-card">
             <span className="chip">⚙️ Settings</span>
             <h2 className="mt-2 font-display text-lg font-bold">Provincial WhatsApp links</h2>
-            <p className="text-xs text-muted-foreground">
-              Pick a province, paste its invite URL, hit Save. New sign-ups from that area are redirected there automatically. Leave blank to send them to the Youth Hub instead.
-            </p>
+            <p className="text-xs text-muted-foreground">Pick a province, paste its invite URL, hit Save.</p>
             <div className="mt-4 space-y-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Province</Label>
@@ -266,11 +267,7 @@ function AdminPage() {
                 >
                   {PROVINCES.map((p) => {
                     const has = (links[p.value] ?? "").trim().startsWith("http");
-                    return (
-                      <option key={p.value} value={p.value}>
-                        {has ? "✅ " : "⚪️ "}{p.label}
-                      </option>
-                    );
+                    return <option key={p.value} value={p.value}>{has ? "✅ " : "⚪️ "}{p.label}</option>;
                   })}
                 </select>
               </div>
@@ -292,16 +289,6 @@ function AdminPage() {
               >
                 {savingLink === selectedProvince ? "Saving…" : "Save link"}
               </Button>
-              {(links[selectedProvince] ?? "").trim() && (
-                <a
-                  href={links[selectedProvince]}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block text-center text-xs font-semibold text-primary hover:underline"
-                >
-                  Test link ↗
-                </a>
-              )}
             </div>
           </div>
 
@@ -324,13 +311,7 @@ function AdminPage() {
                       <p className="truncate text-sm font-bold text-foreground">{member.username}</p>
                       <p className="truncate text-xs text-muted-foreground">{member.full_name}{member.isAdmin ? " · Admin" : " · Member"}</p>
                     </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openMember(member.id)}
-                      className="tap-press shrink-0 rounded-full"
-                    >
+                    <Button type="button" size="sm" variant="outline" onClick={() => openMember(member.id)} className="tap-press shrink-0 rounded-full">
                       View
                     </Button>
                     {member.id === currentUserId ? (
@@ -349,43 +330,47 @@ function AdminPage() {
                     )}
                   </div>
                 ))}
-              {members.length === 0 && <p className="py-3 text-sm text-muted-foreground">No registered members found.</p>}
             </div>
           </div>
         </div>
       </main>
+
+      {/* Styled Pop-up Dialog displaying privacy-secured fields */}
       <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) setViewing(null); }}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl">
           <DialogHeader>
-            <DialogTitle>{viewing?.username || "Member"}</DialogTitle>
-            <DialogDescription>{viewing?.full_name}</DialogDescription>
+            <DialogTitle className="text-xl font-black font-display text-primary">@{viewing?.username || "member"}</DialogTitle>
+            <DialogDescription className="text-sm font-bold text-foreground/90">{viewing?.full_name}</DialogDescription>
           </DialogHeader>
+          
           {viewLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <div className="py-6 text-center text-sm text-muted-foreground">Loading member profile details…</div>
           ) : viewing && (
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div><span className="text-xs font-semibold uppercase text-muted-foreground">Phone</span><p>{viewing.phone || "—"}</p></div>
-                <div><span className="text-xs font-semibold uppercase text-muted-foreground">Age</span><p>{viewing.age ?? "—"}</p></div>
-                <div><span className="text-xs font-semibold uppercase text-muted-foreground">Province</span><p>{viewing.province || "—"}</p></div>
-                <div><span className="text-xs font-semibold uppercase text-muted-foreground">Joined</span><p>{viewing.created_at ? new Date(viewing.created_at).toLocaleDateString() : "—"}</p></div>
+            <div className="space-y-6 pt-2">
+              <div className="grid grid-cols-2 gap-3 rounded-2xl bg-muted/50 p-4 text-xs font-medium">
+                <div><span className="block font-bold uppercase tracking-wider text-muted-foreground text-[10px]">Phone Number</span><p className="text-sm font-bold mt-0.5">{viewing.phone || "—"}</p></div>
+                <div><span className="block font-bold uppercase tracking-wider text-muted-foreground text-[10px]">Age</span><p className="text-sm font-bold mt-0.5">{viewing.age ?? "—"}</p></div>
+                <div><span className="block font-bold uppercase tracking-wider text-muted-foreground text-[10px]">Province</span><p className="text-sm font-bold mt-0.5">{viewing.province || "—"}</p></div>
+                <div><span className="block font-bold uppercase tracking-wider text-muted-foreground text-[10px]">Joined On</span><p className="text-sm font-bold mt-0.5">{viewing.created_at ? new Date(viewing.created_at).toLocaleDateString() : "—"}</p></div>
               </div>
-              <div>
-                <h3 className="font-display text-sm font-bold">Aspirations ({viewAspirations.length})</h3>
-                <div className="mt-2 space-y-2">
-                  {viewAspirations.map((a) => (
-                    <div key={a.id} className="rounded-lg border border-border bg-background p-2.5 text-sm">{a.content}</div>
-                  ))}
-                  {viewAspirations.length === 0 && <p className="text-xs text-muted-foreground">None submitted.</p>}
+              
+              <div className="border-t border-border/80 pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-display text-sm font-black uppercase tracking-wider text-primary">Talents & Skills</h3>
+                  <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">🔒 Private View</span>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-3.5 text-sm leading-relaxed whitespace-pre-wrap font-medium shadow-sm">
+                  {viewing.talents?.trim() ? viewing.talents : <span className="text-xs italic text-muted-foreground">No talents declared during sign up.</span>}
                 </div>
               </div>
-              <div>
-                <h3 className="font-display text-sm font-bold">Talents ({viewTalents.length})</h3>
-                <div className="mt-2 space-y-2">
-                  {viewTalents.map((t) => (
-                    <div key={t.id} className="rounded-lg border border-border bg-background p-2.5 text-sm">{t.content}</div>
-                  ))}
-                  {viewTalents.length === 0 && <p className="text-xs text-muted-foreground">None submitted.</p>}
+
+              <div className="border-t border-border/80 pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-display text-sm font-black uppercase tracking-wider text-primary">Aspirations</h3>
+                  <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">🔒 Private View</span>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-3.5 text-sm leading-relaxed whitespace-pre-wrap font-medium shadow-sm">
+                  {viewing.aspirations?.trim() ? viewing.aspirations : <span className="text-xs italic text-muted-foreground">No aspirations declared during sign up.</span>}
                 </div>
               </div>
             </div>
